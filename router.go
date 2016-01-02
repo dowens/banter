@@ -14,18 +14,32 @@ type Context struct {
 
 type HttpRouter struct {
   Router *httprouter.Router
+  Middleware []Handler
 }
 
 /*
 Router TODO
 */
 func Router() *HttpRouter {
-  return &HttpRouter{Router: httprouter.New()}
+  router := httprouter.New()
+  return &HttpRouter{
+    Router: router,
+    Middleware: []Handler{
+      func(res http.ResponseWriter, req *http.Request, _ Context) {
+        router.ServeHTTP(res, req)
+      },
+    },
+  }
 }
 
-// func (r *httprouter.Router) Use() {
-//
-// }
+/*
+Use TODO
+*/
+func (r *HttpRouter) Use(handler Handler) {
+  finalIndex := len(r.Middleware) - 1
+  final := r.Middleware[finalIndex]
+  r.Middleware = append(r.Middleware[:finalIndex], handler, final)
+}
 
 // GET is a shortcut for router.AddHandler("GET", path, handle)
 func (r *HttpRouter) GET(path string, handlers ...Handler) {
@@ -94,5 +108,5 @@ func Next(res http.ResponseWriter, req *http.Request, context Context) {
 ServeHTTP TODO
 */
 func (r *HttpRouter) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-  r.Router.ServeHTTP(res, req)
+  Next(res, req, Context{Handlers: r.Middleware})
 }
