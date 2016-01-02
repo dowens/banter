@@ -1,44 +1,44 @@
 package banter
 
 import (
-  "github.com/julienschmidt/httprouter"
-  "net/http"
+	"github.com/julienschmidt/httprouter"
+	"net/http"
 )
 
 type Handler func(http.ResponseWriter, *http.Request, Context)
 
 type Context struct {
-	Params httprouter.Params
+	Params   httprouter.Params
 	Handlers []Handler
 }
 
 type HttpRouter struct {
-  Router *httprouter.Router
-  Middleware []Handler
+	Router     *httprouter.Router
+	Middleware []Handler
 }
 
 /*
 Router TODO
 */
 func Router() *HttpRouter {
-  router := httprouter.New()
-  return &HttpRouter{
-    Router: router,
-    Middleware: []Handler{
-      func(res http.ResponseWriter, req *http.Request, _ Context) {
-        router.ServeHTTP(res, req)
-      },
-    },
-  }
+	router := httprouter.New()
+	return &HttpRouter{
+		Router: router,
+		Middleware: []Handler{
+			func(res http.ResponseWriter, req *http.Request, _ Context) {
+				router.ServeHTTP(res, req)
+			},
+		},
+	}
 }
 
 /*
 Use TODO
 */
 func (r *HttpRouter) Use(handler Handler) {
-  finalIndex := len(r.Middleware) - 1
-  final := r.Middleware[finalIndex]
-  r.Middleware = append(r.Middleware[:finalIndex], handler, final)
+	finalIndex := len(r.Middleware) - 1
+	final := r.Middleware[finalIndex]
+	r.Middleware = append(r.Middleware[:finalIndex], handler, final)
 }
 
 // GET is a shortcut for router.AddHandler("GET", path, handle)
@@ -80,17 +80,17 @@ func (r *HttpRouter) DELETE(path string, handlers ...Handler) {
 AddHandlers TODO
 */
 func (r *HttpRouter) AddHandlers(
-  method string,
-  path string,
-  handlers []Handler,
+	method string,
+	path string,
+	handlers []Handler,
 ) {
-  r.Router.Handle(
-    method,
-    path,
-    func(res http.ResponseWriter, req *http.Request, params httprouter.Params) {
-      Next(res, req, Context{Params: params, Handlers: handlers})
-    },
-  )
+	r.Router.Handle(
+		method,
+		path,
+		func(res http.ResponseWriter, req *http.Request, params httprouter.Params) {
+			Next(res, req, Context{Params: params, Handlers: handlers})
+		},
+	)
 }
 
 /*
@@ -108,5 +108,5 @@ func Next(res http.ResponseWriter, req *http.Request, context Context) {
 ServeHTTP TODO
 */
 func (r *HttpRouter) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-  Next(res, req, Context{Handlers: r.Middleware})
+	Next(res, req, Context{Handlers: r.Middleware})
 }
