@@ -1,5 +1,6 @@
 # banter
-**httprouter + interface for middleware = go web framework**
+**[httprouter](https://github.com/julienschmidt/httprouter) + interface for
+middleware = go web framework**
 
 
 ## Usage
