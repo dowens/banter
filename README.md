@@ -1,21 +1,19 @@
 # banter
-**[httprouter](https://github.com/julienschmidt/httprouter) + interface for
-middleware = go web framework**
+**[httprouter](https://github.com/julienschmidt/httprouter) +
+[alice](https://github.com/justinas/alice)-like middleware = go web framework**
 
 
 ## Usage
 
-Configure middleware and route handlers using the same function signature:
+Your middleware and route handlers can use the same interface:
 ```go
-func middleware1(res http.ResponseWriter, req *http.Request, context banter.Context) {
-  // Do something...
-  // Call the next handler.
-  banter.Next(res, req, context)
+func customMiddleware(res http.ResponseWriter, req *http.Request) {
+  // Do something before the final handler executes...
 }
 
-func handler(res http.ResponseWriter, req *http.Request, context banter.Context) {
-  // Print the ID parameter to the response.
-  fmt.Fprintf(res, "The resource ID is: %s", context.Params.ByName("id"))
+func handler(res http.ResponseWriter, req *http.Request) {
+  // URL params (like :id) are added as query params
+  fmt.Fprintf(res, "The resource ID is: %s", req.Query().Get("id"))
 }
 ```
 
@@ -25,10 +23,10 @@ Create a router, configure it, and run it:
 router := banter.Router()
 
 // Configure global middleware.
-router.Use(middlware1)
+router.Use(cors.Defaults().New, logger.New)
 
 // Configure a route with route-specific middleware and final handler.
-router.GET("/thing/:id", middleware2, middleware3, handler)
+router.GET("/thing/:id", customMiddleware, nosurf.NewPure, handler)
 
 // Run the server.
 http.ListenAndServe(":8080", router)
