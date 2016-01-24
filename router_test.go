@@ -1,9 +1,8 @@
 package banter
 
 import (
-	"github.com/julienschmidt/httprouter"
+	// "log"
 	"net/http"
-	"reflect"
 	"testing"
 )
 
@@ -31,11 +30,10 @@ func TestRouter(t *testing.T) {
 	router := Router()
 	router.GET(
 		"/user/:name",
-		func(res http.ResponseWriter, req *http.Request, context Context) {
+		func(res http.ResponseWriter, req *http.Request) {
 			hasMiddlewareBeenCalled = true
-			Next(res, req, context)
 		},
-		func(res http.ResponseWriter, req *http.Request, context Context) {
+		func(res http.ResponseWriter, req *http.Request) {
 
 			// Verify middleware has been called before this Handler executes.
 			if !hasMiddlewareBeenCalled {
@@ -45,9 +43,9 @@ func TestRouter(t *testing.T) {
 			hasHandlerBeenCalled = true
 
 			// Verify Params are correct.
-			want := httprouter.Params{httprouter.Param{"name", "gopher"}}
-			if !reflect.DeepEqual(context.Params, want) {
-				t.Fatalf("Wrong wildcard values: want %v, got %v", want, context.Params)
+			query := req.URL.Query()
+			if query["name"][0] != "gopher" {
+				t.Fatalf("Wrong wildcard values: want gopher, got %s", query["name"])
 			}
 
 		},
@@ -71,25 +69,19 @@ func TestMiddleware(t *testing.T) {
 	router := Router()
 
 	// Configure the middleware.
-	router.Use(func(res http.ResponseWriter, req *http.Request, context Context) {
+	router.Use(func(res http.ResponseWriter, req *http.Request) {
 		hasMiddlewareBeenCalled = true
-		Next(res, req, context)
 	})
 
 	// Configure the test route.
-	router.GET(
-		"/user/:name",
-		func(res http.ResponseWriter, req *http.Request, context Context) {
+	router.GET("/user/:name", func(res http.ResponseWriter, req *http.Request) {
+		// Verify middleware has been called before this Handler executes.
+		if !hasMiddlewareBeenCalled {
+			t.Fatal("Middleware not called.")
+		}
 
-			// Verify middleware has been called before this Handler executes.
-			if !hasMiddlewareBeenCalled {
-				t.Fatal("Middleware not called.")
-			}
-
-			hasHandlerBeenCalled = true
-
-		},
-	)
+		hasHandlerBeenCalled = true
+	})
 
 	// Make the test request.
 	req, _ := http.NewRequest("GET", "/user/gopher", nil)
