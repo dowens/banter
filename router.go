@@ -3,9 +3,17 @@ package banter
 import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
-	"log"
+	// "log"
 	"net/http"
 )
+
+type ChildHTTPHandler struct {
+	Handler http.Handler
+}
+
+type HTTPHandler struct {
+	Handler ChildHTTPHandler
+}
 
 /*
 HTTPRouter TODO
@@ -13,19 +21,16 @@ HTTPRouter TODO
 type HTTPRouter struct {
 	Router *httprouter.Router
 	Chain  alice.Chain
-	Params httprouter.Params
 }
 
-type Handler struct {
-	handler http.Handler
+func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.
+		h.Handler.ServeHTTP(w, r)
 }
 
-func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.handler.ServeHTTP(w, r)
-}
-
-func (h Handler) New(handler http.Handler) http.Handler {
-	return &Handler{handler}
+func (h HTTPHandler) New(handler http.Handler) http.Handler {
+	h.Handler.Handler = handler
+	return h
 }
 
 /*
@@ -33,8 +38,10 @@ Router TODO
 */
 func Router() *HTTPRouter {
 	router := httprouter.New()
-	routerHandler := &Handler{router}
-	c := alice.New(routerHandler.New)
+	routerHandler := HTTPHandler
+
+	http.HandlerFunc(router.ServeHTTP)
+	c := alice.New(routerHandler)
 	return &HTTPRouter{Router: router, Chain: c}
 }
 
@@ -45,14 +52,11 @@ func Chain(chain *alice.Chain, middleware []interface{}) alice.Chain {
 	var c alice.Chain
 	var chainedMiddleware []alice.Constructor
 	for _, m := range middleware {
-		if handler, isHandler := m.(http.Handler); isHandler {
-			h := &Handler{handler}
-			chainedMiddleware = append(chainedMiddleware, h.New)
-		} else if constructor, isCon := m.(alice.Constructor); isCon {
+		if constructor, isCon := m.(alice.Constructor); isCon {
 			chainedMiddleware = append(chainedMiddleware, constructor)
-		} else {
-			// TODO throw error
-			panic("Middleware has to either be a http.Handler or alice.Constructor")
+		} else if f, isFunc := m.(func(http.ResponseWriter, *http.Request)); isFunc {
+			h := &HttpHandler{http.HandlerFunc(f)}
+			chainedMiddleware = append(chainedMiddleware, h.New)
 		}
 	}
 	c = alice.New(chainedMiddleware...)
@@ -116,7 +120,6 @@ func (r *HTTPRouter) AddHandlers(
 		method,
 		path,
 		func(res http.ResponseWriter, req *http.Request, params httprouter.Params) {
-			log.Println("ENTER")
 			// Add URL params as query params so we can stay consistent with the
 			// interface.
 			for _, param := range params {
