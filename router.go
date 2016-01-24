@@ -46,10 +46,10 @@ func Chain(chain *alice.Chain, middleware []interface{}) alice.Chain {
 	var c alice.Chain
 	var chainedMiddleware []alice.Constructor
 	for _, m := range middleware {
-		if constructor, isCon := m.(alice.Constructor); isCon {
+		if constructor, isCon := m.(func(http.Handler) http.Handler); isCon {
 			chainedMiddleware = append(chainedMiddleware, constructor)
-		} else if f, isF := m.(func(http.ResponseWriter, *http.Request)); isF {
-			mwHandler := HTTPHandler{http.HandlerFunc(f)}
+		} else if h, isH := m.(func(http.ResponseWriter, *http.Request)); isH {
+			mwHandler := HTTPHandler{http.HandlerFunc(h)}
 			chainedMiddleware = append(chainedMiddleware, mwHandler.Constructor)
 		} else {
 			panic("Middleware must match either the alice.Constructor or the " +

@@ -2,6 +2,7 @@ package banter
 
 import (
 	// "log"
+	"github.com/rs/cors"
 	"net/http"
 	"testing"
 )
@@ -69,9 +70,12 @@ func TestMiddleware(t *testing.T) {
 	router := Router()
 
 	// Configure the middleware.
-	router.Use(func(res http.ResponseWriter, req *http.Request) {
-		hasMiddlewareBeenCalled = true
-	})
+	router.Use(
+		cors.Default().Handler,
+		func(res http.ResponseWriter, req *http.Request) {
+			hasMiddlewareBeenCalled = true
+		},
+	)
 
 	// Configure the test route.
 	router.GET("/user/:name", func(res http.ResponseWriter, req *http.Request) {

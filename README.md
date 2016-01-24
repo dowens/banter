@@ -13,7 +13,7 @@ func customMiddleware(res http.ResponseWriter, req *http.Request) {
 
 func handler(res http.ResponseWriter, req *http.Request) {
   // URL params (like :id) are added as query params
-  fmt.Fprintf(res, "The resource ID is: %s", req.URL.Query().Get("id"))
+  fmt.Fprintf(res, "The resource ID is: %s", req.Query().Get("id"))
 }
 ```
 
@@ -23,7 +23,7 @@ Create a router, configure it, and run it:
 router := banter.Router()
 
 // Configure global middleware.
-router.Use(cors.Defaults().Handler, logger.New)
+router.Use(cors.Default().Handler, logger.New)
 
 // Configure a route with route-specific middleware and handlers.
 router.GET("/thing/:id", customMiddleware, nosurf.NewPure, handler)
