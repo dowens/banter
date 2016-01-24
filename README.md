@@ -13,7 +13,7 @@ func customMiddleware(res http.ResponseWriter, req *http.Request) {
 
 func handler(res http.ResponseWriter, req *http.Request) {
   // URL params (like :id) are added as query params
-  fmt.Fprintf(res, "The resource ID is: %s", req.Query().Get("id"))
+  fmt.Fprintf(res, "The resource ID is: %s", req.URL.Query().Get("id"))
 }
 ```
 
