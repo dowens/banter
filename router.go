@@ -7,12 +7,11 @@ import (
 	"net/http"
 )
 
-type ChildHTTPHandler struct {
-	Handler http.Handler
-}
-
+/*
+HTTPHandler TODO
+*/
 type HTTPHandler struct {
-	Handler ChildHTTPHandler
+	Handler http.Handler
 }
 
 /*
@@ -23,26 +22,21 @@ type HTTPRouter struct {
 	Chain  alice.Chain
 }
 
-func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.
+/*
+Constructor TODO
+*/
+func (h HTTPHandler) Constructor(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.Handler.ServeHTTP(w, r)
-}
-
-func (h HTTPHandler) New(handler http.Handler) http.Handler {
-	h.Handler.Handler = handler
-	return h
+		handler.ServeHTTP(w, r)
+	})
 }
 
 /*
 Router TODO
 */
 func Router() *HTTPRouter {
-	router := httprouter.New()
-	routerHandler := HTTPHandler
-
-	http.HandlerFunc(router.ServeHTTP)
-	c := alice.New(routerHandler)
-	return &HTTPRouter{Router: router, Chain: c}
+	return &HTTPRouter{Router: httprouter.New(), Chain: alice.New()}
 }
 
 /*
@@ -54,9 +48,12 @@ func Chain(chain *alice.Chain, middleware []interface{}) alice.Chain {
 	for _, m := range middleware {
 		if constructor, isCon := m.(alice.Constructor); isCon {
 			chainedMiddleware = append(chainedMiddleware, constructor)
-		} else if f, isFunc := m.(func(http.ResponseWriter, *http.Request)); isFunc {
-			h := &HttpHandler{http.HandlerFunc(f)}
-			chainedMiddleware = append(chainedMiddleware, h.New)
+		} else if f, isF := m.(func(http.ResponseWriter, *http.Request)); isF {
+			mwHandler := HTTPHandler{http.HandlerFunc(f)}
+			chainedMiddleware = append(chainedMiddleware, mwHandler.Constructor)
+		} else {
+			panic("Middleware must match either the alice.Constructor or the " +
+				"http.HandlerFunc type")
 		}
 	}
 	c = alice.New(chainedMiddleware...)
@@ -123,7 +120,9 @@ func (r *HTTPRouter) AddHandlers(
 			// Add URL params as query params so we can stay consistent with the
 			// interface.
 			for _, param := range params {
-				req.URL.Query().Add(param.Key, param.Value)
+				values := req.URL.Query()
+				values.Add(param.Key, param.Value)
+				req.URL.RawQuery = values.Encode()
 			}
 
 			// Create chain of middleware.
@@ -139,5 +138,5 @@ func (r *HTTPRouter) AddHandlers(
 ServeHTTP TODO
 */
 func (r *HTTPRouter) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	r.Chain.Then(nil).ServeHTTP(res, req)
+	r.Chain.Then(r.Router).ServeHTTP(res, req)
 }

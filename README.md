@@ -5,7 +5,7 @@
 
 ## Usage
 
-Your middleware and route handlers can use the same interface:
+Your middleware and route handlers can have the same function signature:
 ```go
 func customMiddleware(res http.ResponseWriter, req *http.Request) {
   // Do something before the final handler executes...
@@ -25,7 +25,7 @@ router := banter.Router()
 // Configure global middleware.
 router.Use(cors.Defaults().New, logger.New)
 
-// Configure a route with route-specific middleware and final handler.
+// Configure a route with route-specific middleware and handlers.
 router.GET("/thing/:id", customMiddleware, nosurf.NewPure, handler)
 
 // Run the server.
