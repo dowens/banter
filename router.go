@@ -28,6 +28,7 @@ Constructor TODO
 func (h HTTPHandler) Constructor(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.Handler.ServeHTTP(w, r)
+		// TODO change this so that it gets modified w, r
 		handler.ServeHTTP(w, r)
 	})
 }
