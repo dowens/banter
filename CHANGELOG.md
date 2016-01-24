@@ -1,5 +1,8 @@
 # Changes to banter
 
+## v0.1.2
+* Fixing issue with final handler in route chain.
+
 ## v0.1.1
 * Fixing casting issue for constructor middleware and adding case to
   router_test.go.

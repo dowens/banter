@@ -28,7 +28,6 @@ Constructor TODO
 func (h HTTPHandler) Constructor(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.Handler.ServeHTTP(w, r)
-		// TODO change this so that it gets modified w, r
 		handler.ServeHTTP(w, r)
 	})
 }
@@ -49,7 +48,7 @@ func Chain(chain *alice.Chain, middleware []interface{}) alice.Chain {
 	for _, m := range middleware {
 		if constructor, isCon := m.(func(http.Handler) http.Handler); isCon {
 			chainedMiddleware = append(chainedMiddleware, constructor)
-		} else if h, isH := m.(func(http.ResponseWriter, *http.Request)); isH {
+		} else if h, ok := m.(func(http.ResponseWriter, *http.Request)); ok {
 			mwHandler := HTTPHandler{http.HandlerFunc(h)}
 			chainedMiddleware = append(chainedMiddleware, mwHandler.Constructor)
 		} else {
@@ -126,11 +125,18 @@ func (r *HTTPRouter) AddHandlers(
 				req.URL.RawQuery = values.Encode()
 			}
 
-			// Create chain of middleware.
-			c := Chain(nil, middleware)
+			// Create chain of middleware
+			lastMiddlewareIndex := len(middleware) - 1
+			lastMiddleware := middleware[lastMiddlewareIndex]
+			c := Chain(nil, middleware[:lastMiddlewareIndex])
 
-			// Serve chain.
-			c.Then(nil).ServeHTTP(res, req)
+			handler, ok := lastMiddleware.(func(http.ResponseWriter, *http.Request))
+			if ok {
+				// Serve chain.
+				c.Then(http.HandlerFunc(handler)).ServeHTTP(res, req)
+			} else {
+				panic("Final route handler must be a http.HandlerFunc type")
+			}
 		},
 	)
 }
