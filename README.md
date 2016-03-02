@@ -23,7 +23,7 @@ Create a router, configure it, and run it:
 router := banter.Router()
 
 // Configure global middleware.
-router.Use(cors.Default().Handler, logger.New)
+router.Use(cors.Default().Handler, logger.New().Handler)
 
 // Configure a route with route-specific middleware and handlers.
 router.GET("/thing/:id", customMiddleware, nosurf.NewPure, handler)
